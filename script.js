@@ -36,25 +36,22 @@ const object = {
     "integrate_platform": "wordpress"
 };
 
-let keyForDecrypt;
-let ivForDecrypt;
+let key;
+let iv;
+
+async function generateKey() {
+    key = await crypto.subtle.generateKey(
+        { name: "AES-GCM", length: 256 },
+        true,
+        ["encrypt", "decrypt"]
+    );
+    iv = crypto.getRandomValues(new Uint8Array(12));
+}
 
 async function encryptData(data) {
     const jsonString = JSON.stringify(data);
     const encoder = new TextEncoder();
     const dataString = encoder.encode(jsonString);
-
-    const key = await crypto.subtle.generateKey(
-        { name: "AES-GCM", length: 256 },
-        true,
-        ["encrypt", "decrypt"]
-    );
-    keyForDecrypt = key;
-    console.log("🪲🎃 -->> file: script.js:53 -->> encryptData -->> keyForDecrypt:", JSON.stringify(keyForDecrypt))
-
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    ivForDecrypt = iv;
-    console.log("🪲🎃 -->> file: script.js:56 -->> encryptData -->> ivForDecrypt:", ivForDecrypt)
 
     try {
         const encryptedData = await crypto.subtle.encrypt(
@@ -67,7 +64,7 @@ async function encryptData(data) {
         const encryptedString = encryptedArray.map(byte => String.fromCharCode(byte)).join('');
 
         const base64String = btoa(encryptedString);
-        console.log("🪲🎃 -->> file: script.js:69 -->> encryptData -->> base64String:", base64String)
+        console.log("🪲🎃 -->> file: script.js:67 -->> encryptData -->> base64String:", base64String)
         return base64String;
     } catch (error) {
         console.error("เกิดข้อผิดพลาดในขณะเข้ารหัสข้อมูล:", error);
@@ -81,8 +78,8 @@ async function decryptData(encryptedBase64String) {
             .map(char => char.charCodeAt(0));
         const encryptedData = new Uint8Array(encryptedArray);
         const decryptedData = await crypto.subtle.decrypt(
-            { name: "AES-GCM", iv: ivForDecrypt },
-            keyForDecrypt,
+            { name: "AES-GCM", iv: iv },
+            key,
             encryptedData
         );
 
@@ -90,7 +87,7 @@ async function decryptData(encryptedBase64String) {
         const decryptedString = decoder.decode(decryptedData);
 
         const decryptedObject = JSON.parse(decryptedString);
-        console.log("🪲🎃 -->> file: script.js:91 -->> decryptData -->> decryptedObject:", decryptedObject)
+        console.log("🪲🎃 -->> file: script.js:90 -->> decryptData -->> decryptedObject:", decryptedObject)
         return decryptedObject;
     } catch (error) {
         console.error("เกิดข้อผิดพลาดในขณะถอดรหัสข้อมูล:", error);
@@ -98,6 +95,7 @@ async function decryptData(encryptedBase64String) {
 }
 
 async function main() {
+    await generateKey();
     const encData = await encryptData(object);
     const decData = await decryptData(encData);
 }
