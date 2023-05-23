@@ -1,5 +1,5 @@
 const object = {
-    "event": "VIEW_PAGE",
+    "event": "VIEW_PAGE2",
     "cookie_id": [
         "PHPSESSID=l5kkk7ube0lep121jd02onmir6",
         " s_PDPA=accept",
@@ -30,7 +30,7 @@ const object = {
     "type": "load",
     "element": {},
     "dataLayer": [],
-    "brand_id": "634e5e2baa6ef1083f60d791",
+    "brand_id": "622083081500e712913821cd",
     "visitorId": "69597fa3-43e2-4ebd-ac68-b1707055a78b",
     "sessionId": "77251095-cc51-4dc9-8017-10014d9a05da",
     "integrate_platform": "wordpress"
@@ -38,14 +38,37 @@ const object = {
 
 let key;
 let iv;
+let imported;
+let exported = { "alg": "A256GCM", "ext": true, "k": "6Tzacw_3hhdfo1x1ehmygvU48ZPXFxD_2PbQAfMId-Y", "key_ops": ["encrypt", "decrypt"], "kty": "oct" };
+
 
 async function generateKey() {
-    key = await crypto.subtle.generateKey(
+    // key = await crypto.subtle.generateKey(
+    //   { name: "AES-GCM", length: 256 },
+    //   true,
+    //   ["encrypt", "decrypt"]
+    // );
+    // iv = crypto.getRandomValues(new Uint8Array(12));
+
+    iv = new Uint8Array([
+        165, 236, 52, 81, 56,
+        212, 197, 164, 45, 189,
+        165, 157
+    ]);
+    // exported = await crypto.subtle.exportKey("jwk", key)
+    // console.log('exported', JSON.stringify(exported));
+
+    imported = await crypto.subtle.importKey(
+        "jwk",
+        exported,
         { name: "AES-GCM", length: 256 },
         true,
         ["encrypt", "decrypt"]
-    );
-    iv = crypto.getRandomValues(new Uint8Array(12));
+    )
+
+    key = imported
+    console.log('key', key);
+    console.log('iv', iv);
 }
 
 async function encryptData(data) {
@@ -97,7 +120,17 @@ async function decryptData(encryptedBase64String) {
 async function main() {
     await generateKey();
     const encData = await encryptData(object);
-    const decData = await decryptData(encData);
+    // const decData = await decryptData(encData);
+    console.log('encData', encData);
+    // console.log('decData', decData);
+    const data = {
+        value: encData
+    }
+    const xmlhttp = new XMLHttpRequest();
+    xmlhttp.open('POST', 'http://localhost:8787/');
+    xmlhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+    xmlhttp.send(JSON.stringify(data));
+
 }
 
 main();
